@@ -21,7 +21,8 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
-          ignore: brands
+          # Personal custom repository: store-only checks are skipped
+          ignore: brands description license topics
 
   tests:
     runs-on: ubuntu-latest
