@@ -9,26 +9,18 @@ import logging
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry, ConfigSubentry
-from homeassistant.const import (
-    ATTR_UNIT_OF_MEASUREMENT,
-    STATE_UNAVAILABLE,
-    STATE_UNKNOWN,
-    UnitOfTemperature,
-)
 from homeassistant.core import (
     CALLBACK_TYPE,
     Event,
     EventStateChangedData,
     HomeAssistant,
     callback,
-    split_entity_id,
 )
 from homeassistant.helpers.event import (
     async_track_state_change_event,
     async_track_time_interval,
 )
 from homeassistant.util import dt as dt_util
-from homeassistant.util.unit_conversion import TemperatureConverter
 
 from ..const import (
     CONF_CAMERA,
@@ -45,6 +37,7 @@ from ..const import (
     SUBENTRY_GRILL,
     SUBENTRY_PROBE,
 )
+from ..helpers import read_temperature
 from ..storage import GartenStore
 from .estimator import ProbePhase, ProbeTracker
 from .profiles import (
@@ -80,27 +73,6 @@ KITCHEN_EVENT_TYPES = [
 ]
 
 type EventListener = Callable[[str, dict[str, Any]], None]
-
-
-def read_temperature(hass: HomeAssistant, entity_id: str | None) -> float | None:
-    """Return the temperature of a sensor or weather entity in °C."""
-    if not entity_id or (state := hass.states.get(entity_id)) is None:
-        return None
-    if split_entity_id(entity_id)[0] == "weather":
-        raw = state.attributes.get("temperature")
-        unit = state.attributes.get("temperature_unit")
-    else:
-        if state.state in (STATE_UNAVAILABLE, STATE_UNKNOWN):
-            return None
-        raw = state.state
-        unit = state.attributes.get(ATTR_UNIT_OF_MEASUREMENT)
-    try:
-        value = float(raw)
-    except (TypeError, ValueError):
-        return None
-    if unit in (UnitOfTemperature.FAHRENHEIT, UnitOfTemperature.KELVIN):
-        value = TemperatureConverter.convert(value, unit, UnitOfTemperature.CELSIUS)
-    return value
 
 
 @dataclass

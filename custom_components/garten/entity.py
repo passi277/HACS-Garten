@@ -7,6 +7,7 @@ from homeassistant.helpers.entity import Entity
 
 from .const import DOMAIN, MANUFACTURER
 from .kitchen.manager import GrillState, KitchenManager, ProbeState
+from .pool.manager import PoolManager
 
 
 class KitchenEntity(Entity):
@@ -63,3 +64,25 @@ class ProbeEntity(KitchenEntity):
             ),
         )
         self.probe = probe
+
+
+class PoolEntity(Entity):
+    """Entity belonging to a pool device."""
+
+    _attr_has_entity_name = True
+    _attr_should_poll = False
+
+    def __init__(self, pool: PoolManager, key: str) -> None:
+        self.pool = pool
+        self._attr_translation_key = key
+        self._attr_unique_id = f"{pool.subentry_id}_{key}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, pool.subentry_id)},
+            name=pool.name,
+            manufacturer=MANUFACTURER,
+            model="Pool",
+        )
+
+    async def async_added_to_hass(self) -> None:
+        """Subscribe to pool updates."""
+        self.async_on_remove(self.pool.add_listener(self.async_write_ha_state))

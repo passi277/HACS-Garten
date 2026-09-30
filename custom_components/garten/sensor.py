@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -9,14 +10,24 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.const import PERCENTAGE, UnitOfTemperature, UnitOfTime
+from homeassistant.const import (
+    PERCENTAGE,
+    UnitOfEnergy,
+    UnitOfTemperature,
+    UnitOfTime,
+)
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import GartenConfigEntry
-from .entity import GrillEntity, ProbeEntity
+from .const import CONF_POOL_POWER, CONF_POOL_SOLAR_SURPLUS
+from .entity import GrillEntity, PoolEntity, ProbeEntity
 from .kitchen.estimator import ProbePhase
 from .kitchen.manager import GrillState, KitchenManager, ProbeState
+from .pool.energy import EnergyMeter
+from .pool.manager import PoolManager
+from .pool.quality import RANGES, Quality
 
 PARALLEL_UPDATES = 0
 
@@ -47,6 +58,26 @@ async def async_setup_entry(
         if probe.ambient_entity:
             probe_entities.append(AmbientTemperatureSensor(kitchen, probe))
         async_add_entities(probe_entities, config_subentry_id=probe_id)
+    for pool_id, pool in entry.runtime_data.pools.items():
+        async_add_entities(_pool_sensors(pool), config_subentry_id=pool_id)
+
+
+def _pool_sensors(pool: PoolManager) -> list[SensorEntity]:
+    # The water quality sensor always exists: the dashboard card is bound to it.
+    entities: list[SensorEntity] = [
+        WaterQualitySensor(pool),
+        PumpRuntimeTodaySensor(pool),
+        BackwashHoursSensor(pool),
+        LastBackwashSensor(pool),
+    ]
+    entities.extend(ParameterStatusSensor(pool, p) for p in pool.parameters)
+    if pool.source(CONF_POOL_POWER):
+        entities.extend((EnergyTodaySensor(pool), EnergyYearSensor(pool)))
+        entities.append(CostTodaySensor(pool))
+        if pool.source(CONF_POOL_SOLAR_SURPLUS):
+            entities.extend((SolarShareTodaySensor(pool), SolarShareYearSensor(pool)))
+            entities.append(SolarSavingsYearSensor(pool))
+    return entities
 
 
 class _TemperatureSensor(SensorEntity):
@@ -239,3 +270,236 @@ class PhaseSensor(ProbeEntity, SensorEntity):
     def native_value(self) -> str | None:
         """Return the phase."""
         return self.probe.phase.value if self.probe.phase else None
+
+
+# ---------------------------------------------------------------------- pool
+
+QUALITY_OPTIONS = [q.value for q in Quality]
+
+
+class WaterQualitySensor(PoolEntity, SensorEntity):
+    """Overall water quality (worst of all rated values).
+
+    Its attributes also carry everything the pool dashboard card needs.
+    """
+
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = QUALITY_OPTIONS
+
+    def __init__(self, pool: PoolManager) -> None:
+        super().__init__(pool, "water_quality")
+
+    @property
+    def native_value(self) -> str | None:
+        """Return the overall rating."""
+        return self.pool.quality.value if self.pool.quality else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Expose values, ranges and the entities used by the dashboard card."""
+        pool = self.pool
+        return {
+            "pool_name": pool.name,
+            "values": dict(pool.values),
+            "ranges": {p: RANGES[p].as_list() for p in pool.parameters},
+            "guidance": pool.guidance,
+            "last_measurement": (
+                pool.last_measurement.isoformat() if pool.last_measurement else None
+            ),
+            "card_entities": self._card_entities(),
+            "card_sources": dict(pool.sources),
+        }
+
+    def _card_entities(self) -> dict[str, str]:
+        registry = er.async_get(self.hass)
+        return (
+            {
+                reg.translation_key: reg.entity_id
+                for reg in er.async_entries_for_config_entry(
+                    registry, self.registry_entry.config_entry_id
+                )
+                if reg.config_subentry_id == self.pool.subentry_id
+                and reg.translation_key
+            }
+            if self.registry_entry
+            else {}
+        )
+
+
+class ParameterStatusSensor(PoolEntity, SensorEntity):
+    """Rating of one water value (pH, redox, chlorine, salt)."""
+
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = QUALITY_OPTIONS
+
+    def __init__(self, pool: PoolManager, parameter: str) -> None:
+        super().__init__(pool, f"{parameter}_status")
+        self.parameter = parameter
+
+    @property
+    def native_value(self) -> str | None:
+        """Return the rating."""
+        quality = self.pool.qualities.get(self.parameter)
+        return quality.value if quality else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Expose the value and the ok range."""
+        limits = RANGES[self.parameter]
+        return {
+            "value": self.pool.values.get(self.parameter),
+            "ok_min": limits.ok_min,
+            "ok_max": limits.ok_max,
+        }
+
+
+class _HoursSensor(PoolEntity, SensorEntity):
+    _attr_device_class = SensorDeviceClass.DURATION
+    _attr_native_unit_of_measurement = UnitOfTime.HOURS
+    _attr_suggested_display_precision = 1
+
+
+class PumpRuntimeTodaySensor(_HoursSensor):
+    """Pump runtime today."""
+
+    def __init__(self, pool: PoolManager) -> None:
+        super().__init__(pool, "runtime_today")
+
+    @property
+    def native_value(self) -> float:
+        """Return the runtime in hours."""
+        return round(self.pool.runtime_today_h, 3)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Expose the recommended runtime."""
+        return {"recommended_runtime": self.pool.recommended_runtime_h}
+
+
+class BackwashHoursSensor(_HoursSensor):
+    """Pump hours since the last backwash."""
+
+    def __init__(self, pool: PoolManager) -> None:
+        super().__init__(pool, "backwash_hours")
+
+    @property
+    def native_value(self) -> float:
+        """Return the pump hours."""
+        return round(self.pool.backwash_hours, 2)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Expose the backwash limits."""
+        days = self.pool.days_since_backwash
+        return {
+            "interval_hours": self.pool.backwash_interval_h,
+            "max_days": self.pool.backwash_max_days,
+            "days_since_backwash": round(days, 1) if days is not None else None,
+        }
+
+
+class LastBackwashSensor(PoolEntity, SensorEntity):
+    """When the filter was last backwashed."""
+
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+
+    def __init__(self, pool: PoolManager) -> None:
+        super().__init__(pool, "last_backwash")
+
+    @property
+    def native_value(self) -> datetime | None:
+        """Return the last backwash."""
+        return self.pool.last_backwash
+
+
+class _EnergySensor(PoolEntity, SensorEntity):
+    _attr_device_class = SensorDeviceClass.ENERGY
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+    _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+    _attr_suggested_display_precision = 2
+
+
+class EnergyTodaySensor(_EnergySensor):
+    """Pump energy today."""
+
+    def __init__(self, pool: PoolManager) -> None:
+        super().__init__(pool, "energy_today")
+
+    @property
+    def native_value(self) -> float:
+        """Return kWh today."""
+        return round(self.pool.meter.day_kwh, 4)
+
+
+class EnergyYearSensor(_EnergySensor):
+    """Pump energy this year."""
+
+    def __init__(self, pool: PoolManager) -> None:
+        super().__init__(pool, "energy_year")
+
+    @property
+    def native_value(self) -> float:
+        """Return kWh this year."""
+        return round(self.pool.meter.year_kwh, 3)
+
+
+class _ShareSensor(PoolEntity, SensorEntity):
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_suggested_display_precision = 0
+
+
+class SolarShareTodaySensor(_ShareSensor):
+    """Share of today's pump energy covered by solar."""
+
+    def __init__(self, pool: PoolManager) -> None:
+        super().__init__(pool, "solar_share_today")
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the solar share today."""
+        meter = self.pool.meter
+        return EnergyMeter.share(meter.day_kwh, meter.day_solar_kwh)
+
+
+class SolarShareYearSensor(_ShareSensor):
+    """Share of this year's pump energy covered by solar."""
+
+    def __init__(self, pool: PoolManager) -> None:
+        super().__init__(pool, "solar_share_year")
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the solar share this year."""
+        meter = self.pool.meter
+        return EnergyMeter.share(meter.year_kwh, meter.year_solar_kwh)
+
+
+class _MoneySensor(PoolEntity, SensorEntity):
+    _attr_device_class = SensorDeviceClass.MONETARY
+    _attr_native_unit_of_measurement = "EUR"
+    _attr_suggested_display_precision = 2
+
+
+class CostTodaySensor(_MoneySensor):
+    """Grid electricity cost of the pump today."""
+
+    def __init__(self, pool: PoolManager) -> None:
+        super().__init__(pool, "cost_today")
+
+    @property
+    def native_value(self) -> float:
+        """Return the cost today."""
+        return round(self.pool.cost_today, 4)
+
+
+class SolarSavingsYearSensor(_MoneySensor):
+    """Money saved this year by running the pump on solar."""
+
+    def __init__(self, pool: PoolManager) -> None:
+        super().__init__(pool, "solar_savings_year")
+
+    @property
+    def native_value(self) -> float:
+        """Return the savings this year."""
+        return round(self.pool.savings_year, 2)

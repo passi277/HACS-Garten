@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Garten",
-        "description": "Grillgeräte und Sonden fügst du danach am Garten-Eintrag über „Grill hinzufügen“ und „Sonde hinzufügen“ hinzu.",
+        "description": "Grillgeräte, Sonden und Pools fügst du danach am Garten-Eintrag über „Grill hinzufügen“, „Sonde hinzufügen“ und „Pool hinzufügen“ hinzu.",
         "data": {
           "outdoor_temperature_entity": "Außentemperatur"
         },
@@ -13,7 +13,7 @@
       },
       "reconfigure": {
         "title": "Garten",
-        "description": "Grillgeräte und Sonden fügst du danach am Garten-Eintrag über „Grill hinzufügen“ und „Sonde hinzufügen“ hinzu.",
+        "description": "Grillgeräte, Sonden und Pools fügst du danach am Garten-Eintrag über „Grill hinzufügen“, „Sonde hinzufügen“ und „Pool hinzufügen“ hinzu.",
         "data": {
           "outdoor_temperature_entity": "Außentemperatur"
         },
@@ -124,6 +124,72 @@
       "abort": {
         "reconfigure_successful": "Die Sonde wurde aktualisiert."
       }
+    },
+    "pool": {
+      "initiate_flow": {
+        "user": "Pool hinzufügen",
+        "reconfigure": "Pool bearbeiten"
+      },
+      "entry_type": "Pool",
+      "step": {
+        "user": {
+          "title": "Pool",
+          "description": "Bündelt Pumpe, Wasserwerte, Kamera und Energie deines Pools. Außer der Pumpe ist alles optional.",
+          "data": {
+            "name": "Name",
+            "pump_entity": "Pumpe",
+            "power_entity": "Pumpenleistung",
+            "temperature_entity": "Wassertemperatur",
+            "ph_entity": "pH-Wert",
+            "orp_entity": "Redox (ORP)",
+            "chlorine_entity": "Freies Chlor",
+            "salt_entity": "Salz",
+            "last_measurement_entity": "Zeitpunkt der letzten Messung",
+            "guidance_entity": "Pflegehinweis",
+            "recommended_runtime_entity": "Empfohlene Laufzeit",
+            "solar_surplus_entity": "Solar-Überschuss",
+            "camera_entity": "Kamera"
+          },
+          "data_description": {
+            "power_entity": "Leistung der Pumpe in W, z. B. vom Shelly-Stecker. Nötig für Energie, Kosten und Solar-Anteil.",
+            "last_measurement_entity": "Zeitstempel-Sensor, z. B. „Pool Last Measurement“. Warnt, wenn die Messung älter als 12 Stunden ist.",
+            "guidance_entity": "Text-Sensor mit Pflegehinweis, z. B. „Pool Guidance“ von Blue Riiot.",
+            "recommended_runtime_entity": "Sensor mit der empfohlenen Filterlaufzeit in Stunden.",
+            "solar_surplus_entity": "Aktuelle Einspeisung in W nach allen Verbrauchern (inkl. Pumpe); negative Werte = Netzbezug."
+          }
+        },
+        "reconfigure": {
+          "title": "Pool",
+          "data": {
+            "name": "Name",
+            "pump_entity": "Pumpe",
+            "power_entity": "Pumpenleistung",
+            "temperature_entity": "Wassertemperatur",
+            "ph_entity": "pH-Wert",
+            "orp_entity": "Redox (ORP)",
+            "chlorine_entity": "Freies Chlor",
+            "salt_entity": "Salz",
+            "last_measurement_entity": "Zeitpunkt der letzten Messung",
+            "guidance_entity": "Pflegehinweis",
+            "recommended_runtime_entity": "Empfohlene Laufzeit",
+            "solar_surplus_entity": "Solar-Überschuss",
+            "camera_entity": "Kamera"
+          },
+          "data_description": {
+            "power_entity": "Leistung der Pumpe in W, z. B. vom Shelly-Stecker. Nötig für Energie, Kosten und Solar-Anteil.",
+            "last_measurement_entity": "Zeitstempel-Sensor, z. B. „Pool Last Measurement“. Warnt, wenn die Messung älter als 12 Stunden ist.",
+            "guidance_entity": "Text-Sensor mit Pflegehinweis, z. B. „Pool Guidance“ von Blue Riiot.",
+            "recommended_runtime_entity": "Sensor mit der empfohlenen Filterlaufzeit in Stunden.",
+            "solar_surplus_entity": "Aktuelle Einspeisung in W nach allen Verbrauchern (inkl. Pumpe); negative Werte = Netzbezug."
+          }
+        }
+      },
+      "error": {
+        "name_exists": "Es gibt bereits einen Pool mit diesem Namen."
+      },
+      "abort": {
+        "reconfigure_successful": "Der Pool wurde aktualisiert."
+      }
     }
   },
   "selector": {
@@ -188,6 +254,15 @@
       },
       "target": {
         "name": "Zieltemperatur"
+      },
+      "backwash_interval": {
+        "name": "Rückspülen nach Pumpenstunden"
+      },
+      "backwash_max_days": {
+        "name": "Rückspülen spätestens nach"
+      },
+      "electricity_price": {
+        "name": "Strompreis"
       }
     },
     "sensor": {
@@ -252,6 +327,73 @@
           "target_reached": "Ziel erreicht",
           "resting": "Ruhen"
         }
+      },
+      "water_quality": {
+        "name": "Wasserqualität",
+        "state": {
+          "ok": "OK",
+          "check": "Prüfen",
+          "critical": "Kritisch"
+        }
+      },
+      "ph_status": {
+        "name": "pH-Status",
+        "state": {
+          "ok": "OK",
+          "check": "Prüfen",
+          "critical": "Kritisch"
+        }
+      },
+      "orp_status": {
+        "name": "Redox-Status",
+        "state": {
+          "ok": "OK",
+          "check": "Prüfen",
+          "critical": "Kritisch"
+        }
+      },
+      "chlorine_status": {
+        "name": "Chlor-Status",
+        "state": {
+          "ok": "OK",
+          "check": "Prüfen",
+          "critical": "Kritisch"
+        }
+      },
+      "salt_status": {
+        "name": "Salz-Status",
+        "state": {
+          "ok": "OK",
+          "check": "Prüfen",
+          "critical": "Kritisch"
+        }
+      },
+      "runtime_today": {
+        "name": "Pumpenlaufzeit heute"
+      },
+      "backwash_hours": {
+        "name": "Pumpenstunden seit Rückspülen"
+      },
+      "last_backwash": {
+        "name": "Letztes Rückspülen"
+      },
+      "energy_today": {
+        "name": "Energie heute"
+      },
+      "energy_year": {
+        "name": "Energie Jahr"
+      },
+      "solar_share_today": {
+        "name": "Solar-Anteil heute"
+      },
+      "solar_share_year": {
+        "name": "Solar-Anteil Jahr"
+      },
+      "cost_today": {
+        "name": "Stromkosten heute"
+      },
+      "solar_savings_year": {
+        "name": "Solar-Ersparnis Jahr"
       }
     },
     "binary_sensor": {
@@ -260,6 +402,12 @@
       },
       "target_reached": {
         "name": "Ziel erreicht"
+      },
+      "backwash_due": {
+        "name": "Rückspülen fällig"
+      },
+      "measurement_stale": {
+        "name": "Messung veraltet"
       }
     },
     "button": {
@@ -268,6 +416,9 @@
       },
       "session_stop": {
         "name": "Session beenden"
+      },
+      "backwash_done": {
+        "name": "Rückgespült"
       }
     },
     "event": {
@@ -283,6 +434,19 @@
               "chamber_deviation": "Garraum außerhalb Bereich",
               "probe_offline": "Sonde offline",
               "session_ended": "Session beendet"
+            }
+          }
+        }
+      },
+      "pool_event": {
+        "name": "Pool-Ereignis",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "water_quality_changed": "Wasserqualität verschlechtert",
+              "measurement_stale": "Messung veraltet",
+              "backwash_due": "Rückspülen fällig",
+              "backwash_done": "Rückgespült"
             }
           }
         }

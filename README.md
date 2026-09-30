@@ -8,7 +8,7 @@ Eigene Integration für den Garten. Sie bündelt vorhandene Geräte zu Garten-Be
 |---|---|
 | Outdoor-Küche: Grillgeräte, Sonden, Garprofile inkl. Wild | ✅ verfügbar |
 | Bewässerung (Verbrauch, Wasserbedarf, Gießempfehlung) | geplant |
-| Pool (Filterlaufzeit, Wasserwerte, Rückspülen) | geplant |
+| Pool: Wasserwerte-Ampel, Rückspül-Erinnerung, Energie & Solar-Anteil, eigene Dashboard-Karte | ✅ verfügbar |
 | Garten-Übersicht (Frost, Mähfenster, Batterien) | geplant |
 | Pflanzen & Kalender (Pflegeaufgaben, Saisonkalender) | geplant |
 | Floorplan-Karte mit Kameras | geplant |
@@ -21,6 +21,7 @@ Eigene Integration für den Garten. Sie bündelt vorhandene Geräte zu Garten-Be
 4. Am Eintrag „Garten“ fügst du deine Geräte hinzu:
    - **Grill hinzufügen**: z. B. Spanferkelgrill, Smoker, Gasgrill, Holzkohlegrill, Dutch Oven, Elektro-Kochplatte oder Pizzaofen
    - **Sonde hinzufügen**: z. B. Meater 2, Meater plus
+   - **Pool hinzufügen**: Pumpe, Wasserwerte, Kamera, Solar-Überschuss …
 
 ## Outdoor-Küche
 
@@ -86,6 +87,59 @@ actions:
 ### Update von Version 0.1
 
 Bestehende „Outdoor-Küche“-Einträge werden beim ersten Start automatisch umgewandelt: Jede Küche wird zu einem Grill (Spanferkel → Spanferkelgrill, sonst Gasgrill), ihre Sonden werden zu eigenständigen Sonden. Gargut, Zieltemperaturen und die Session-Historie bleiben erhalten. Die Entity-IDs ändern sich dabei, und eine laufende Session wird beendet.
+
+## Pool
+
+**Pool hinzufügen** bündelt deinen Pool und seine Geräte zu einem Gerät. Pflicht ist nur die Pumpe, alles andere ist optional:
+
+| Feld | Beispiel |
+|---|---|
+| Pumpe | `switch.stecker_pool_switch_0` |
+| Pumpenleistung (W) | `sensor.stecker_pool_switch_0_power`, nötig für Energie, Kosten und Solar-Anteil |
+| Wassertemperatur, pH, Redox, freies Chlor, Salz | `sensor.pool_temperature`, `sensor.pool_ph`, `sensor.pool_orp` … |
+| Zeitpunkt der letzten Messung | `sensor.pool_last_measurement`, warnt nach 12 h ohne neue Messung |
+| Pflegehinweis | `sensor.pool_guidance` |
+| Empfohlene Laufzeit (h) | `sensor.pool_empfohlene_laufzeit` |
+| Solar-Überschuss (W) | `sensor.solar_aktueller_uberschuss`: Einspeisung **nach** allen Verbrauchern inkl. Pumpe, negative Werte = Netzbezug |
+| Kamera | `camera.pool` |
+
+Die Integration **schaltet nichts selbst**. Deine Pool-Automationen bleiben unverändert.
+
+### Entitäten (Gerät „Pool“)
+
+| Entität | Beschreibung |
+|---|---|
+| `sensor` Wasserqualität | OK / Prüfen / Kritisch, der schlechteste Einzelwert. Trägt auch alles, was die Karte braucht. |
+| `sensor` pH-/Redox-/Chlor-/Salz-Status | Ampel pro Wert. Standardbereiche siehe unten. |
+| `binary_sensor` Messung veraltet | Letzte Messung älter als 12 h |
+| `sensor` Pumpenlaufzeit heute | Stunden; Attribut `recommended_runtime` |
+| `sensor` Pumpenstunden seit Rückspülen, `sensor` Letztes Rückspülen | |
+| `binary_sensor` Rückspülen fällig | Pumpenstunden ≥ Intervall **oder** Tage ≥ Maximum |
+| `button` Rückgespült | Setzt den Zähler zurück. Tipp: in deinem Skript „Pool: Rückspülen Start“ mit aufrufen. |
+| `number` Rückspülen nach Pumpenstunden / spätestens nach Tagen / Strompreis | Einstellungen (Standard 50 h, 14 Tage, 0,30 €/kWh) |
+| `sensor` Energie heute / Jahr, Solar-Anteil heute / Jahr, Stromkosten heute, Solar-Ersparnis Jahr | Aus Pumpenleistung und Solar-Überschuss berechnet |
+| `event` Pool-Ereignis | `water_quality_changed` (nur bei Verschlechterung), `measurement_stale`, `backwash_due`, `backwash_done`, zusätzlich Bus-Event `garten_pool_event` |
+
+Standardbereiche (angelehnt an Blue Riiot):
+
+| Wert | OK | Prüfen | sonst |
+|---|---|---|---|
+| pH | 7,2 – 7,6 | 6,8 – 8,0 | Kritisch |
+| Redox | 650 – 800 mV | 400 – 900 mV | Kritisch |
+| Freies Chlor | 0,5 – 1,5 mg/l | 0,2 – 3,0 mg/l | Kritisch |
+| Salz | 3,0 – 4,5 g/l | 2,5 – 6,0 g/l | Kritisch |
+
+### Dashboard-Karte
+
+Die Integration bringt die Karte **Garten Pool** mit. Du musst sie weder separat über HACS noch als Ressource installieren. Im Dashboard: *Karte hinzufügen → „Garten Pool“*, oder per YAML:
+
+```yaml
+type: custom:garten-pool-card
+entity: sensor.pool_wasserqualitat   # Wasserqualität-Sensor deines Pools
+show_camera: true                    # false = kompakt ohne Kamerabild
+```
+
+Die Karte zeigt die Wassertemperatur, die Pumpe (antippen schaltet sie), die Wasserwerte mit Ampel und Bereichsbalken, den Pflegehinweis, Laufzeit und Rückspülen samt Button „Rückgespült“ sowie Energie, Solar-Anteil, Kosten und Ersparnis. Ein Tipp auf einen Wert öffnet dessen Details.
 
 ## Entwicklung
 

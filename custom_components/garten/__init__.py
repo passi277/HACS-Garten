@@ -2,14 +2,20 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import logging
+from pathlib import Path
 from types import MappingProxyType
 from typing import Any
 
+from homeassistant.components.frontend import add_extra_js_url
+from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry, ConfigSubentry
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.entity_platform import async_get_platforms
+from homeassistant.loader import async_get_integration
 
 from .const import (
     CONF_CAMERA,
@@ -19,10 +25,14 @@ from .const import (
     CONF_POWER_SWITCH,
     CONF_PROBE_AMBIENT,
     CONF_PROBE_CORE,
+    DOMAIN,
+    FRONTEND_URL_BASE,
     LEGACY_CONF_PROBE_NAME,
     LEGACY_CONF_PROBES,
     LEGACY_SUBENTRY_KITCHEN,
+    POOL_CARD_FILE,
     SUBENTRY_GRILL,
+    SUBENTRY_POOL,
     SUBENTRY_PROBE,
 )
 from .kitchen.manager import KitchenManager
@@ -33,6 +43,7 @@ from .kitchen.profiles import (
     PROFILE_CUSTOM,
     GrillType,
 )
+from .pool.manager import PoolManager
 from .storage import GartenStore
 
 _LOGGER = logging.getLogger(__name__)
@@ -53,6 +64,7 @@ class GartenData:
 
     store: GartenStore
     kitchen: KitchenManager
+    pools: dict[str, PoolManager] = field(default_factory=dict)
 
 
 type GartenConfigEntry = ConfigEntry[GartenData]
@@ -64,12 +76,41 @@ async def async_setup_entry(hass: HomeAssistant, entry: GartenConfigEntry) -> bo
     await store.async_load()
     store.remove_except(set(entry.subentries))
 
+    await _async_register_frontend(hass)
+
     kitchen = KitchenManager(hass, entry, store)
     kitchen.async_start()
-    entry.runtime_data = GartenData(store=store, kitchen=kitchen)
+    data = GartenData(store=store, kitchen=kitchen)
+    for subentry in entry.subentries.values():
+        if subentry.subentry_type == SUBENTRY_POOL:
+            pool = PoolManager(hass, subentry, store)
+            pool.async_start()
+            data.pools[subentry.subentry_id] = pool
+    entry.runtime_data = data
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    _async_remove_orphaned_entities(hass, entry)
+    # The pool card mapping needs all entities to be registered first
+    for pool in data.pools.values():
+        pool.async_update_listeners()
     return True
+
+
+@callback
+def _async_remove_orphaned_entities(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Remove registry entries no longer provided, e.g. after removing a source."""
+    provided = {
+        entity.unique_id
+        for platform in async_get_platforms(hass, DOMAIN)
+        if platform.config_entry is not None
+        and platform.config_entry.entry_id == entry.entry_id
+        for entity in platform.entities.values()
+    }
+    registry = er.async_get(hass)
+    for reg_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+        # Disabled entities are never added to a platform: keep them
+        if reg_entry.disabled_by is None and reg_entry.unique_id not in provided:
+            registry.async_remove(reg_entry.entity_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: GartenConfigEntry) -> bool:
@@ -77,6 +118,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: GartenConfigEntry) -> b
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
         entry.runtime_data.kitchen.async_stop()
+        for pool in entry.runtime_data.pools.values():
+            pool.async_stop()
         await entry.runtime_data.store.async_flush()
     return unloaded
 
@@ -86,8 +129,28 @@ async def async_remove_entry(hass: HomeAssistant, entry: GartenConfigEntry) -> N
     await GartenStore(hass, entry.entry_id).async_remove()
 
 
+async def _async_register_frontend(hass: HomeAssistant) -> None:
+    """Serve the dashboard cards and load them in the frontend (once)."""
+    if hass.data.setdefault(DOMAIN, {}).get("frontend_registered"):
+        return
+    await hass.http.async_register_static_paths(
+        [
+            StaticPathConfig(
+                FRONTEND_URL_BASE,
+                str(Path(__file__).parent / "frontend"),
+                cache_headers=False,
+            )
+        ]
+    )
+    integration = await async_get_integration(hass, DOMAIN)
+    add_extra_js_url(
+        hass, f"{FRONTEND_URL_BASE}/{POOL_CARD_FILE}?v={integration.version}"
+    )
+    hass.data[DOMAIN]["frontend_registered"] = True
+
+
 async def _async_update_listener(hass: HomeAssistant, entry: GartenConfigEntry) -> None:
-    """Reload when settings or subentries (grills, probes) change."""
+    """Reload when settings or subentries (grills, probes, pools) change."""
     await hass.config_entries.async_reload(entry.entry_id)
 
 

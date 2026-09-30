@@ -36,6 +36,17 @@ from .const import (
     CONF_GRILL_TYPE,
     CONF_LIGHT,
     CONF_OUTDOOR_TEMPERATURE,
+    CONF_POOL_CHLORINE,
+    CONF_POOL_GUIDANCE,
+    CONF_POOL_LAST_MEASUREMENT,
+    CONF_POOL_ORP,
+    CONF_POOL_PH,
+    CONF_POOL_POWER,
+    CONF_POOL_PUMP,
+    CONF_POOL_RECOMMENDED_RUNTIME,
+    CONF_POOL_SALT,
+    CONF_POOL_SOLAR_SURPLUS,
+    CONF_POOL_TEMPERATURE,
     CONF_POWER_SWITCH,
     CONF_PROBE_AMBIENT,
     CONF_PROBE_CORE,
@@ -44,6 +55,7 @@ from .const import (
     NAME,
     NO_GRILL,
     SUBENTRY_GRILL,
+    SUBENTRY_POOL,
     SUBENTRY_PROBE,
 )
 from .kitchen.profiles import GrillType
@@ -51,6 +63,7 @@ from .kitchen.profiles import GrillType
 _TEMPERATURE_SENSOR = EntitySelector(
     EntitySelectorConfig(domain="sensor", device_class=SensorDeviceClass.TEMPERATURE)
 )
+_SENSOR = EntitySelector(EntitySelectorConfig(domain="sensor"))
 _OUTDOOR_TEMPERATURE = EntitySelector(
     EntitySelectorConfig(
         filter=[
@@ -107,7 +120,11 @@ class GartenConfigFlow(ConfigFlow, domain=DOMAIN):
         cls, config_entry: ConfigEntry
     ) -> dict[str, type[ConfigSubentryFlow]]:
         """Return the things that can be added to the garden."""
-        return {SUBENTRY_GRILL: GrillSubentryFlow, SUBENTRY_PROBE: ProbeSubentryFlow}
+        return {
+            SUBENTRY_GRILL: GrillSubentryFlow,
+            SUBENTRY_PROBE: ProbeSubentryFlow,
+            SUBENTRY_POOL: PoolSubentryFlow,
+        }
 
 
 class _GartenSubentryFlow(ConfigSubentryFlow):
@@ -253,3 +270,41 @@ class ProbeSubentryFlow(_GartenSubentryFlow):
         if core == user_input.get(CONF_PROBE_AMBIENT):
             return {CONF_PROBE_AMBIENT: "same_as_core"}
         return {}
+
+
+class PoolSubentryFlow(_GartenSubentryFlow):
+    """Add or reconfigure a pool with its pump and water sensors."""
+
+    subentry_type = SUBENTRY_POOL
+
+    def _schema(self) -> vol.Schema:
+        return vol.Schema(
+            {
+                vol.Required(CONF_NAME): TextSelector(),
+                vol.Required(CONF_POOL_PUMP): EntitySelector(
+                    EntitySelectorConfig(domain=["switch", "input_boolean"])
+                ),
+                vol.Optional(CONF_POOL_POWER): EntitySelector(
+                    EntitySelectorConfig(
+                        domain="sensor", device_class=SensorDeviceClass.POWER
+                    )
+                ),
+                vol.Optional(CONF_POOL_TEMPERATURE): _TEMPERATURE_SENSOR,
+                vol.Optional(CONF_POOL_PH): _SENSOR,
+                vol.Optional(CONF_POOL_ORP): _SENSOR,
+                vol.Optional(CONF_POOL_CHLORINE): _SENSOR,
+                vol.Optional(CONF_POOL_SALT): _SENSOR,
+                vol.Optional(CONF_POOL_LAST_MEASUREMENT): _SENSOR,
+                vol.Optional(CONF_POOL_GUIDANCE): _SENSOR,
+                vol.Optional(CONF_POOL_RECOMMENDED_RUNTIME): _SENSOR,
+                vol.Optional(CONF_POOL_SOLAR_SURPLUS): _SENSOR,
+                vol.Optional(CONF_CAMERA): EntitySelector(
+                    EntitySelectorConfig(domain="camera")
+                ),
+            }
+        )
+
+    def _validate(
+        self, user_input: dict[str, Any], others: list[ConfigSubentry]
+    ) -> dict[str, str]:
+        return self._validate_name(user_input, others)

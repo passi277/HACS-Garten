@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Garden",
-        "description": "Afterwards add grills and probes to the garden entry via \"Add grill\" and \"Add probe\".",
+        "description": "Afterwards add grills, probes and pools to the garden entry via \"Add grill\", \"Add probe\" and \"Add pool\".",
         "data": {
           "outdoor_temperature_entity": "Outdoor temperature"
         },
@@ -13,7 +13,7 @@
       },
       "reconfigure": {
         "title": "Garden",
-        "description": "Afterwards add grills and probes to the garden entry via \"Add grill\" and \"Add probe\".",
+        "description": "Afterwards add grills, probes and pools to the garden entry via \"Add grill\", \"Add probe\" and \"Add pool\".",
         "data": {
           "outdoor_temperature_entity": "Outdoor temperature"
         },
@@ -124,6 +124,72 @@
       "abort": {
         "reconfigure_successful": "The probe was updated."
       }
+    },
+    "pool": {
+      "initiate_flow": {
+        "user": "Add pool",
+        "reconfigure": "Edit pool"
+      },
+      "entry_type": "Pool",
+      "step": {
+        "user": {
+          "title": "Pool",
+          "description": "Bundles pump, water values, camera and energy of your pool. Everything except the pump is optional.",
+          "data": {
+            "name": "Name",
+            "pump_entity": "Pump",
+            "power_entity": "Pump power",
+            "temperature_entity": "Water temperature",
+            "ph_entity": "pH",
+            "orp_entity": "Redox (ORP)",
+            "chlorine_entity": "Free chlorine",
+            "salt_entity": "Salt",
+            "last_measurement_entity": "Time of last measurement",
+            "guidance_entity": "Care guidance",
+            "recommended_runtime_entity": "Recommended runtime",
+            "solar_surplus_entity": "Solar surplus",
+            "camera_entity": "Camera"
+          },
+          "data_description": {
+            "power_entity": "Pump power in W, e.g. from a Shelly plug. Needed for energy, cost and solar share.",
+            "last_measurement_entity": "Timestamp sensor, e.g. \"Pool Last Measurement\". Warns if the measurement is older than 12 hours.",
+            "guidance_entity": "Text sensor with care guidance, e.g. \"Pool Guidance\" from Blue Riiot.",
+            "recommended_runtime_entity": "Sensor with the recommended filter runtime in hours.",
+            "solar_surplus_entity": "Current export in W after all consumers (including the pump); negative values = grid import."
+          }
+        },
+        "reconfigure": {
+          "title": "Pool",
+          "data": {
+            "name": "Name",
+            "pump_entity": "Pump",
+            "power_entity": "Pump power",
+            "temperature_entity": "Water temperature",
+            "ph_entity": "pH",
+            "orp_entity": "Redox (ORP)",
+            "chlorine_entity": "Free chlorine",
+            "salt_entity": "Salt",
+            "last_measurement_entity": "Time of last measurement",
+            "guidance_entity": "Care guidance",
+            "recommended_runtime_entity": "Recommended runtime",
+            "solar_surplus_entity": "Solar surplus",
+            "camera_entity": "Camera"
+          },
+          "data_description": {
+            "power_entity": "Pump power in W, e.g. from a Shelly plug. Needed for energy, cost and solar share.",
+            "last_measurement_entity": "Timestamp sensor, e.g. \"Pool Last Measurement\". Warns if the measurement is older than 12 hours.",
+            "guidance_entity": "Text sensor with care guidance, e.g. \"Pool Guidance\" from Blue Riiot.",
+            "recommended_runtime_entity": "Sensor with the recommended filter runtime in hours.",
+            "solar_surplus_entity": "Current export in W after all consumers (including the pump); negative values = grid import."
+          }
+        }
+      },
+      "error": {
+        "name_exists": "A pool with this name already exists."
+      },
+      "abort": {
+        "reconfigure_successful": "The pool was updated."
+      }
     }
   },
   "selector": {
@@ -188,6 +254,15 @@
       },
       "target": {
         "name": "Target temperature"
+      },
+      "backwash_interval": {
+        "name": "Backwash after pump hours"
+      },
+      "backwash_max_days": {
+        "name": "Backwash at the latest after"
+      },
+      "electricity_price": {
+        "name": "Electricity price"
       }
     },
     "sensor": {
@@ -252,6 +327,73 @@
           "target_reached": "Target reached",
           "resting": "Resting"
         }
+      },
+      "water_quality": {
+        "name": "Water quality",
+        "state": {
+          "ok": "OK",
+          "check": "Check",
+          "critical": "Critical"
+        }
+      },
+      "ph_status": {
+        "name": "pH status",
+        "state": {
+          "ok": "OK",
+          "check": "Check",
+          "critical": "Critical"
+        }
+      },
+      "orp_status": {
+        "name": "Redox status",
+        "state": {
+          "ok": "OK",
+          "check": "Check",
+          "critical": "Critical"
+        }
+      },
+      "chlorine_status": {
+        "name": "Chlorine status",
+        "state": {
+          "ok": "OK",
+          "check": "Check",
+          "critical": "Critical"
+        }
+      },
+      "salt_status": {
+        "name": "Salt status",
+        "state": {
+          "ok": "OK",
+          "check": "Check",
+          "critical": "Critical"
+        }
+      },
+      "runtime_today": {
+        "name": "Pump runtime today"
+      },
+      "backwash_hours": {
+        "name": "Pump hours since backwash"
+      },
+      "last_backwash": {
+        "name": "Last backwash"
+      },
+      "energy_today": {
+        "name": "Energy today"
+      },
+      "energy_year": {
+        "name": "Energy this year"
+      },
+      "solar_share_today": {
+        "name": "Solar share today"
+      },
+      "solar_share_year": {
+        "name": "Solar share this year"
+      },
+      "cost_today": {
+        "name": "Electricity cost today"
+      },
+      "solar_savings_year": {
+        "name": "Solar savings this year"
       }
     },
     "binary_sensor": {
@@ -260,6 +402,12 @@
       },
       "target_reached": {
         "name": "Target reached"
+      },
+      "backwash_due": {
+        "name": "Backwash due"
+      },
+      "measurement_stale": {
+        "name": "Measurement stale"
       }
     },
     "button": {
@@ -268,6 +416,9 @@
       },
       "session_stop": {
         "name": "End session"
+      },
+      "backwash_done": {
+        "name": "Backwashed"
       }
     },
     "event": {
@@ -283,6 +434,19 @@
               "chamber_deviation": "Chamber out of range",
               "probe_offline": "Probe offline",
               "session_ended": "Session ended"
+            }
+          }
+        }
+      },
+      "pool_event": {
+        "name": "Pool event",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "water_quality_changed": "Water quality worsened",
+              "measurement_stale": "Measurement stale",
+              "backwash_due": "Backwash due",
+              "backwash_done": "Backwashed"
             }
           }
         }

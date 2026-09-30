@@ -1,12 +1,18 @@
 {
   "domain": "garten",
   "name": "Garten",
-  "codeowners": ["@passi277"],
+  "codeowners": [
+    "@passi277"
+  ],
   "config_flow": true,
+  "dependencies": [
+    "frontend",
+    "http"
+  ],
   "documentation": "https://github.com/passi277/HACS-Garten",
   "integration_type": "hub",
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/passi277/HACS-Garten/issues",
   "requirements": [],
-  "version": "0.2.0"
+  "version": "0.3.0"
 }
