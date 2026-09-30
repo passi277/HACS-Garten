@@ -10,9 +10,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import GartenConfigEntry
-from .entity import KitchenEntity, ProbeEntity
-from .kitchen.controller import KitchenController, Probe
+from .entity import GrillEntity, ProbeEntity
 from .kitchen.estimator import ProbePhase
+from .kitchen.manager import GrillState, KitchenManager, ProbeState
 
 PARALLEL_UPDATES = 0
 
@@ -23,34 +23,36 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up binary sensor entities."""
-    for subentry_id, controller in entry.runtime_data.kitchens.items():
-        entities: list[BinarySensorEntity] = [
-            TargetReachedBinarySensor(controller, p) for p in controller.probes
-        ]
-        if any(p.ambient_entity for p in controller.probes):
-            entities.append(ChamberDeviationBinarySensor(controller))
-        async_add_entities(entities, config_subentry_id=subentry_id)
+    kitchen = entry.runtime_data.kitchen
+    for grill_id, grill in kitchen.grills.items():
+        async_add_entities(
+            [ChamberDeviationBinarySensor(kitchen, grill)], config_subentry_id=grill_id
+        )
+    for probe_id, probe in kitchen.probes.items():
+        async_add_entities(
+            [TargetReachedBinarySensor(kitchen, probe)], config_subentry_id=probe_id
+        )
 
 
-class ChamberDeviationBinarySensor(KitchenEntity, BinarySensorEntity):
+class ChamberDeviationBinarySensor(GrillEntity, BinarySensorEntity):
     """On when the chamber temperature leaves the tolerated range."""
 
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
 
-    def __init__(self, controller: KitchenController) -> None:
-        super().__init__(controller, "chamber_deviation")
+    def __init__(self, manager: KitchenManager, grill: GrillState) -> None:
+        super().__init__(manager, grill, "chamber_deviation")
 
     @property
     def is_on(self) -> bool:
         """Return True if the chamber is out of range."""
-        return self.controller.chamber_deviation
+        return self.grill.chamber_deviation
 
 
 class TargetReachedBinarySensor(ProbeEntity, BinarySensorEntity):
     """On when the probe has reached its target temperature."""
 
-    def __init__(self, controller: KitchenController, probe: Probe) -> None:
-        super().__init__(controller, probe, "target_reached")
+    def __init__(self, manager: KitchenManager, probe: ProbeState) -> None:
+        super().__init__(manager, probe, "target_reached")
 
     @property
     def is_on(self) -> bool:

@@ -2,16 +2,40 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+import logging
+from types import MappingProxyType
+from typing import Any
 
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigSubentry
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import entity_registry as er
+from homeassistant.core import HomeAssistant
 
-from .const import SUBENTRY_KITCHEN
-from .kitchen.controller import KitchenController
+from .const import (
+    CONF_CAMERA,
+    CONF_CHAMBER_TOLERANCE,
+    CONF_GRILL_TYPE,
+    CONF_LIGHT,
+    CONF_POWER_SWITCH,
+    CONF_PROBE_AMBIENT,
+    CONF_PROBE_CORE,
+    LEGACY_CONF_PROBE_NAME,
+    LEGACY_CONF_PROBES,
+    LEGACY_SUBENTRY_KITCHEN,
+    SUBENTRY_GRILL,
+    SUBENTRY_PROBE,
+)
+from .kitchen.manager import KitchenManager
+from .kitchen.profiles import (
+    DEFAULT_TARGET,
+    GRILL_CHAMBER_DEFAULTS,
+    LEGACY_METHOD_GRILL_TYPES,
+    PROFILE_CUSTOM,
+    GrillType,
+)
 from .storage import GartenStore
+
+_LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
@@ -28,7 +52,7 @@ class GartenData:
     """Runtime data of a Garten config entry."""
 
     store: GartenStore
-    kitchens: dict[str, KitchenController] = field(default_factory=dict)
+    kitchen: KitchenManager
 
 
 type GartenConfigEntry = ConfigEntry[GartenData]
@@ -38,17 +62,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: GartenConfigEntry) -> bo
     """Set up Garten from a config entry."""
     store = GartenStore(hass, entry.entry_id)
     await store.async_load()
-    data = GartenData(store=store)
-
-    for subentry in entry.subentries.values():
-        if subentry.subentry_type == SUBENTRY_KITCHEN:
-            controller = KitchenController(hass, subentry, store)
-            controller.async_start()
-            data.kitchens[subentry.subentry_id] = controller
     store.remove_except(set(entry.subentries))
-    _async_remove_stale_probe_entities(hass, entry, data)
 
-    entry.runtime_data = data
+    kitchen = KitchenManager(hass, entry, store)
+    kitchen.async_start()
+    entry.runtime_data = GartenData(store=store, kitchen=kitchen)
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
@@ -58,8 +76,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: GartenConfigEntry) -> b
     """Unload a config entry."""
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
-        for controller in entry.runtime_data.kitchens.values():
-            controller.async_stop()
+        entry.runtime_data.kitchen.async_stop()
         await entry.runtime_data.store.async_flush()
     return unloaded
 
@@ -69,24 +86,101 @@ async def async_remove_entry(hass: HomeAssistant, entry: GartenConfigEntry) -> N
     await GartenStore(hass, entry.entry_id).async_remove()
 
 
-@callback
-def _async_remove_stale_probe_entities(
-    hass: HomeAssistant, entry: GartenConfigEntry, data: GartenData
-) -> None:
-    """Remove entities of probes that were removed from a kitchen."""
-    ent_reg = er.async_get(hass)
-    for reg_entry in er.async_entries_for_config_entry(ent_reg, entry.entry_id):
-        controller = data.kitchens.get(reg_entry.config_subentry_id or "")
-        if controller is None:
-            continue
-        rest = reg_entry.unique_id.removeprefix(f"{controller.subentry.subentry_id}_")
-        if not rest.startswith("probe"):
-            continue
-        index = rest.removeprefix("probe").split("_", 1)[0]
-        if index.isdigit() and int(index) >= len(controller.probes):
-            ent_reg.async_remove(reg_entry.entity_id)
-
-
 async def _async_update_listener(hass: HomeAssistant, entry: GartenConfigEntry) -> None:
-    """Reload when areas (subentries) are added, changed or removed."""
+    """Reload when settings or subentries (grills, probes) change."""
     await hass.config_entries.async_reload(entry.entry_id)
+
+
+def _unique_title(title: str, taken: set[str]) -> str:
+    candidate, number = title, 2
+    while candidate.casefold() in taken:
+        candidate = f"{title} {number}"
+        number += 1
+    taken.add(candidate.casefold())
+    return candidate
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: GartenConfigEntry) -> bool:
+    """Migrate old entries.
+
+    Version 1 had "kitchen" subentries bundling one cooking method with its
+    probes. Version 2 splits them into independent grill and probe subentries.
+    """
+    if entry.version > 2:
+        return False
+    if entry.version == 1:
+        await _async_migrate_kitchens(hass, entry)
+        hass.config_entries.async_update_entry(entry, version=2)
+    _LOGGER.debug("Migrated Garten entry to version %s", entry.version)
+    return True
+
+
+async def _async_migrate_kitchens(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    store = GartenStore(hass, entry.entry_id)
+    await store.async_load()
+    grill_titles: set[str] = set()
+    probe_titles: set[str] = set()
+    probes_by_core: set[str] = set()
+
+    for kitchen in list(entry.subentries.values()):
+        if kitchen.subentry_type != LEGACY_SUBENTRY_KITCHEN:
+            continue
+        old: dict[str, Any] = store.get(kitchen.subentry_id)
+        grill_type = LEGACY_METHOD_GRILL_TYPES.get(
+            old.get("method", ""), GrillType.GAS_GRILL
+        )
+        grill_data: dict[str, Any] = {CONF_GRILL_TYPE: grill_type.value}
+        for key in (CONF_CHAMBER_TOLERANCE, CONF_CAMERA, CONF_LIGHT, CONF_POWER_SWITCH):
+            if key in kitchen.data:
+                grill_data[key] = kitchen.data[key]
+        grill = ConfigSubentry(
+            data=MappingProxyType(grill_data),
+            subentry_type=SUBENTRY_GRILL,
+            title=_unique_title(kitchen.title, grill_titles),
+            unique_id=None,
+        )
+        hass.config_entries.async_add_subentry(entry, grill)
+        store.set(
+            grill.subentry_id,
+            {
+                "chamber_target": old.get("chamber_target")
+                or GRILL_CHAMBER_DEFAULTS[grill_type],
+                "session_start": None,
+                "sessions": old.get("sessions", []),
+            },
+        )
+
+        old_probes: dict[str, Any] = old.get("probes", {})
+        for old_probe in kitchen.data.get(LEGACY_CONF_PROBES, []):
+            core = old_probe[CONF_PROBE_CORE]
+            if core in probes_by_core:
+                continue
+            probes_by_core.add(core)
+            probe_data = {CONF_PROBE_CORE: core}
+            if ambient := old_probe.get(CONF_PROBE_AMBIENT):
+                probe_data[CONF_PROBE_AMBIENT] = ambient
+            probe = ConfigSubentry(
+                data=MappingProxyType(probe_data),
+                subentry_type=SUBENTRY_PROBE,
+                title=_unique_title(old_probe[LEGACY_CONF_PROBE_NAME], probe_titles),
+                unique_id=None,
+            )
+            hass.config_entries.async_add_subentry(entry, probe)
+            stored = old_probes.get(core, {})
+            store.set(
+                probe.subentry_id,
+                {
+                    "grill_id": None,
+                    "profile": stored.get("profile", PROFILE_CUSTOM),
+                    "target": stored.get("target", DEFAULT_TARGET),
+                    "fired": [],
+                },
+            )
+
+        hass.config_entries.async_remove_subentry(entry, kitchen.subentry_id)
+        _LOGGER.info(
+            "Converted outdoor kitchen '%s' into grill '%s'", kitchen.title, grill.title
+        )
+
+    store.remove_except(set(entry.subentries))
+    await store.async_flush()

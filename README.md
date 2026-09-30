@@ -6,7 +6,7 @@ Eigene Integration für den Garten. Sie bündelt vorhandene Geräte zu Garten-Be
 
 | Bereich | Status |
 |---|---|
-| Outdoor-Küche (Grillthermometer, Garmethoden, Garprofile) | ✅ verfügbar |
+| Outdoor-Küche: Grillgeräte, Sonden, Garprofile inkl. Wild | ✅ verfügbar |
 | Bewässerung (Verbrauch, Wasserbedarf, Gießempfehlung) | geplant |
 | Pool (Filterlaufzeit, Wasserwerte, Rückspülen) | geplant |
 | Garten-Übersicht (Frost, Mähfenster, Batterien) | geplant |
@@ -17,43 +17,54 @@ Eigene Integration für den Garten. Sie bündelt vorhandene Geräte zu Garten-Be
 
 1. HACS → ⋮ → *Benutzerdefinierte Repositories* → `https://github.com/passi277/HACS-Garten`, Typ *Integration*
 2. „Garten“ installieren und Home Assistant neu starten
-3. *Einstellungen → Geräte & Dienste → Integration hinzufügen → Garten*
-4. Am Eintrag „Garten“ → **Outdoor-Küche hinzufügen**
+3. *Einstellungen → Geräte & Dienste → Integration hinzufügen → Garten*. Optional wählst du hier den Sensor für die **Außentemperatur**, entweder einen Temperatursensor oder eine Wetter-Entität. Ändern lässt sich das später über *⋮ → Neu konfigurieren*.
+4. Am Eintrag „Garten“ fügst du deine Geräte hinzu:
+   - **Grill hinzufügen**: z. B. Spanferkelgrill, Smoker, Gasgrill, Holzkohlegrill, Dutch Oven, Elektro-Kochplatte oder Pizzaofen
+   - **Sonde hinzufügen**: z. B. Meater 2, Meater plus
 
 ## Outdoor-Küche
 
-Bei der Einrichtung wählst du pro Sonde (bis zu 4) den Sensor für die **Kerntemperatur** (z. B. `sensor.…_meater_2_innentemperatur`) und optional die **Umgebungstemperatur** als Garraum-Sensor. Kamera, Licht und Stromschalter kannst du verknüpfen. Sie werden als Attribute bereitgestellt und später im Floorplan genutzt.
+Grillgeräte und Sonden sind **getrennte Geräte**. Welche Sonde an welchem Grill steckt, legst du beim Grillen fest: An der Sonde wählst du im Feld **Grill** den passenden Grill aus.
+
+- **Sonde einem Grill zuordnen**: Die Session dieses Grills startet automatisch.
+- **Letzte Sonde abziehen** (Grill = „Keiner“) oder **Session beenden** drücken: Die Session endet und wird in der Historie gespeichert, samt Außentemperatur. Die Sonden werden wieder frei.
+- **Session starten** geht auch ohne Sonde, z. B. zum Vorheizen.
 
 Die Integration führt Zieltemperatur und Phase selbst. Du musst also keinen Garvorgang in der Meater-App starten.
 
-### Entitäten (Gerät „Outdoor-Küche“)
+### Grill-Gerät
 
 | Entität | Beschreibung |
 |---|---|
-| `select` Garmethode | Aus, Gasgrill, Smoker, Spanferkel, Dutch Oven, Elektro-Herdplatte. Eine Auswahl ≠ Aus startet die Session, „Aus“ beendet sie. |
-| `number` Garraum-Soll | Wird je Methode vorbelegt (Gasgrill 220 °C, Smoker 110 °C, Spanferkel 160 °C, Dutch Oven 180 °C) |
-| `sensor` Garraumtemperatur | Umgebungstemperatur der ersten verfügbaren Sonde |
+| `number` Garraum-Soll | Vorbelegt je Grilltyp (Spanferkelgrill 160 °C, Smoker 110 °C, Gasgrill 220 °C …) |
+| `sensor` Garraumtemperatur | Eigener Garraum-Sensor des Grills. Ist keiner eingestellt, gilt die Umgebungstemperatur der zugeordneten Sonde. |
 | `binary_sensor` Garraum außerhalb Bereich | Nur, wenn der Garraum den Sollbereich schon einmal erreicht hat (Toleranz einstellbar) |
-| `button` Session starten / beenden | |
+| `sensor` Außentemperatur | Wenn am Garten-Eintrag eingestellt |
+| `sensor` Zugeordnete Sonden | Anzahl, Attribut `probes` mit den Namen |
 | `sensor` Session-Dauer | Minuten; Attribut `last_session` mit der letzten Session |
-| `event` Küchen-Ereignis | siehe unten |
+| `button` Session starten / beenden | |
+| `event` Grill-Ereignis | siehe unten |
 
-Pro Sonde:
+### Sonden-Gerät
 
 | Entität | Beschreibung |
 |---|---|
-| `select` Gargut | z. B. Rind medium (58 °C), Pulled Pork (93 °C), Spanferkel (75 °C), Hähnchen (74 °C), Lachs (52 °C) |
+| `select` Grill | Keiner / deine Grills |
+| `select` Gargut | Rind, Schwein, Geflügel, Lamm, **Wild** (Reh, Hirsch, Wildschwein, Hase, Wildente), Fisch … |
 | `number` Zieltemperatur | Wird vom Gargut gesetzt und ist überschreibbar |
-| `sensor` Kerntemperatur | Gespiegelt, Attribut `rate_per_minute` |
-| `sensor` Fortschritt | % von Starttemperatur bis Ziel |
+| `sensor` Kerntemperatur | Attribut `rate_per_minute` |
+| `sensor` Umgebungstemperatur | Wenn für die Sonde eingestellt |
+| `sensor` Fortschritt | % von der Starttemperatur bis zum Ziel |
 | `sensor` Restzeit | Schätzung über den Temperaturanstieg der letzten 10 min |
 | `sensor` Phase | Bereit, Aufheizen, Garen, Stall, Fast fertig, Ziel erreicht, Ruhen |
 | `binary_sensor` Ziel erreicht | |
 
 ### Ereignisse
 
-Das Event-Entity und zusätzlich das Bus-Event `garten_kitchen_event` melden:
-`session_started`, `near_done` (5 °C vor Ziel), `target_reached`, `stall_detected` (Smoker/Spanferkel: < 0,5 °C Anstieg in 15 min zwischen 60 und 80 °C), `chamber_deviation`, `probe_offline`, `session_ended`.
+Das Event-Entity des Grills und zusätzlich das Bus-Event `garten_kitchen_event` melden:
+`session_started`, `near_done` (5 °C vor Ziel), `target_reached`, `stall_detected` (Smoker/Spanferkelgrill: < 0,5 °C Anstieg in 15 min zwischen 60 und 80 °C), `chamber_deviation`, `probe_offline`, `session_ended`.
+
+Die Event-Daten enthalten `grill`, `grill_type`, `probe`, `profile`, `temperature`, `target` und `outdoor_temperature`.
 
 Beispiel-Automation für eine Push-Nachricht:
 
@@ -66,11 +77,15 @@ triggers:
 actions:
   - action: notify.mobile_app_DEIN_HANDY  # anpassen
     data:
-      title: "🔥 {{ trigger.event.data.probe }} ist fertig"
+      title: "🔥 {{ trigger.event.data.probe }} am {{ trigger.event.data.grill }} ist fertig"
       message: >-
         {{ trigger.event.data.temperature | round(1) }} °C erreicht
         (Ziel {{ trigger.event.data.target | round(0) }} °C)
 ```
+
+### Update von Version 0.1
+
+Bestehende „Outdoor-Küche“-Einträge werden beim ersten Start automatisch umgewandelt: Jede Küche wird zu einem Grill (Spanferkel → Spanferkelgrill, sonst Gasgrill), ihre Sonden werden zu eigenständigen Sonden. Gargut, Zieltemperaturen und die Session-Historie bleiben erhalten. Die Entity-IDs ändern sich dabei, und eine laufende Session wird beendet.
 
 ## Entwicklung
 

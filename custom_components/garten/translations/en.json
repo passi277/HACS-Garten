@@ -3,143 +3,153 @@
     "step": {
       "user": {
         "title": "Garden",
-        "description": "Creates the garden hub. Afterwards add areas such as the outdoor kitchen via \"Add outdoor kitchen\"."
+        "description": "Afterwards add grills and probes to the garden entry via \"Add grill\" and \"Add probe\".",
+        "data": {
+          "outdoor_temperature_entity": "Outdoor temperature"
+        },
+        "data_description": {
+          "outdoor_temperature_entity": "Optional: temperature sensor or weather entity for the outdoor temperature. Shown on every grill and stored in the session history."
+        }
+      },
+      "reconfigure": {
+        "title": "Garden",
+        "description": "Afterwards add grills and probes to the garden entry via \"Add grill\" and \"Add probe\".",
+        "data": {
+          "outdoor_temperature_entity": "Outdoor temperature"
+        },
+        "data_description": {
+          "outdoor_temperature_entity": "Optional: temperature sensor or weather entity for the outdoor temperature. Shown on every grill and stored in the session history."
+        }
       }
     },
     "abort": {
-      "already_configured": "The garden is already set up. Add further areas to the existing entry."
+      "already_configured": "The garden is already set up. Add grills and probes to the existing entry.",
+      "reconfigure_successful": "The garden settings were saved."
     }
   },
   "config_subentries": {
-    "kitchen": {
+    "grill": {
       "initiate_flow": {
-        "user": "Add outdoor kitchen",
-        "reconfigure": "Reconfigure outdoor kitchen"
+        "user": "Add grill",
+        "reconfigure": "Edit grill"
       },
-      "entry_type": "Outdoor kitchen",
+      "entry_type": "Grill",
       "step": {
         "user": {
-          "title": "Outdoor kitchen",
-          "description": "Select the meat thermometer sensors. Use the internal (core) temperature as core sensor and the ambient temperature as chamber sensor.",
+          "title": "Grill",
+          "description": "A cooking appliance such as a suckling pig grill, smoker or gas grill. Attach probes while grilling via the probe's \"Grill\" field.",
           "data": {
             "name": "Name",
+            "grill_type": "Grill type",
+            "chamber_entity": "Own chamber sensor",
             "chamber_tolerance": "Chamber tolerance",
             "camera_entity": "Camera",
             "light_entity": "Light",
             "power_switch_entity": "Power switch"
           },
           "data_description": {
-            "chamber_tolerance": "Allowed deviation of the chamber temperature from its target before a warning is raised.",
+            "chamber_entity": "Optional, e.g. a built-in thermometer. Without it, the ambient temperature of the attached probe is used.",
+            "chamber_tolerance": "Allowed deviation from the chamber target before a warning is raised.",
             "camera_entity": "Optional, shown on the garden floorplan later.",
             "light_entity": "Optional, shown on the garden floorplan later.",
             "power_switch_entity": "Optional, shown on the garden floorplan later."
-          },
-          "sections": {
-            "probe_1": {
-              "name": "Probe 1",
-              "data": {
-                "name": "Probe name",
-                "core_entity": "Core temperature sensor",
-                "ambient_entity": "Ambient / chamber temperature sensor"
-              }
-            },
-            "probe_2": {
-              "name": "Probe 2",
-              "data": {
-                "name": "Probe name",
-                "core_entity": "Core temperature sensor",
-                "ambient_entity": "Ambient / chamber temperature sensor"
-              }
-            },
-            "probe_3": {
-              "name": "Probe 3",
-              "data": {
-                "name": "Probe name",
-                "core_entity": "Core temperature sensor",
-                "ambient_entity": "Ambient / chamber temperature sensor"
-              }
-            },
-            "probe_4": {
-              "name": "Probe 4",
-              "data": {
-                "name": "Probe name",
-                "core_entity": "Core temperature sensor",
-                "ambient_entity": "Ambient / chamber temperature sensor"
-              }
-            }
           }
         },
         "reconfigure": {
-          "title": "Outdoor kitchen",
-          "description": "Change probes and linked devices.",
+          "title": "Grill",
           "data": {
             "name": "Name",
+            "grill_type": "Grill type",
+            "chamber_entity": "Own chamber sensor",
             "chamber_tolerance": "Chamber tolerance",
             "camera_entity": "Camera",
             "light_entity": "Light",
             "power_switch_entity": "Power switch"
           },
-          "sections": {
-            "probe_1": {
-              "name": "Probe 1",
-              "data": {
-                "name": "Probe name",
-                "core_entity": "Core temperature sensor",
-                "ambient_entity": "Ambient / chamber temperature sensor"
-              }
-            },
-            "probe_2": {
-              "name": "Probe 2",
-              "data": {
-                "name": "Probe name",
-                "core_entity": "Core temperature sensor",
-                "ambient_entity": "Ambient / chamber temperature sensor"
-              }
-            },
-            "probe_3": {
-              "name": "Probe 3",
-              "data": {
-                "name": "Probe name",
-                "core_entity": "Core temperature sensor",
-                "ambient_entity": "Ambient / chamber temperature sensor"
-              }
-            },
-            "probe_4": {
-              "name": "Probe 4",
-              "data": {
-                "name": "Probe name",
-                "core_entity": "Core temperature sensor",
-                "ambient_entity": "Ambient / chamber temperature sensor"
-              }
-            }
+          "data_description": {
+            "chamber_entity": "Optional, e.g. a built-in thermometer. Without it, the ambient temperature of the attached probe is used.",
+            "chamber_tolerance": "Allowed deviation from the chamber target before a warning is raised.",
+            "camera_entity": "Optional, shown on the garden floorplan later.",
+            "light_entity": "Optional, shown on the garden floorplan later.",
+            "power_switch_entity": "Optional, shown on the garden floorplan later."
           }
         }
       },
       "error": {
-        "no_probe": "Select at least one core temperature sensor.",
-        "core_required": "An ambient sensor needs a core temperature sensor for the same probe.",
-        "duplicate_probe": "This core temperature sensor is already used by another probe."
+        "name_exists": "A grill with this name already exists.",
+        "name_reserved": "This name is reserved."
       },
       "abort": {
-        "reconfigure_successful": "The outdoor kitchen was updated."
+        "reconfigure_successful": "The grill was updated."
+      }
+    },
+    "probe": {
+      "initiate_flow": {
+        "user": "Add probe",
+        "reconfigure": "Edit probe"
+      },
+      "entry_type": "Probe",
+      "step": {
+        "user": {
+          "title": "Probe",
+          "description": "A meat thermometer / probe, e.g. Meater. It can be used on any grill.",
+          "data": {
+            "name": "Name",
+            "core_entity": "Core temperature sensor",
+            "ambient_entity": "Ambient temperature sensor"
+          },
+          "data_description": {
+            "core_entity": "Internal temperature of the food, e.g. \"Meater 2 internal temperature\".",
+            "ambient_entity": "Optional, e.g. \"Meater 2 ambient temperature\". Used as chamber temperature if the grill has no own sensor."
+          }
+        },
+        "reconfigure": {
+          "title": "Probe",
+          "data": {
+            "name": "Name",
+            "core_entity": "Core temperature sensor",
+            "ambient_entity": "Ambient temperature sensor"
+          },
+          "data_description": {
+            "core_entity": "Internal temperature of the food, e.g. \"Meater 2 internal temperature\".",
+            "ambient_entity": "Optional, e.g. \"Meater 2 ambient temperature\". Used as chamber temperature if the grill has no own sensor."
+          }
+        }
+      },
+      "error": {
+        "name_exists": "A probe with this name already exists.",
+        "core_in_use": "This sensor is already used by another probe.",
+        "same_as_core": "Ambient and core sensor must be different."
+      },
+      "abort": {
+        "reconfigure_successful": "The probe was updated."
+      }
+    }
+  },
+  "selector": {
+    "grill_type": {
+      "options": {
+        "suckling_pig_grill": "Suckling pig grill",
+        "smoker": "Smoker",
+        "gas_grill": "Gas grill",
+        "charcoal_grill": "Charcoal grill",
+        "dutch_oven": "Dutch oven",
+        "electric_hob": "Electric hob",
+        "pizza_oven": "Pizza oven",
+        "other": "Other"
       }
     }
   },
   "entity": {
     "select": {
-      "cooking_method": {
-        "name": "Cooking method",
+      "grill": {
+        "name": "Grill",
         "state": {
-          "off": "Off",
-          "gas_grill": "Gas grill",
-          "smoker": "Smoker",
-          "suckling_pig": "Suckling pig",
-          "dutch_oven": "Dutch oven",
-          "electric_hob": "Electric hob"
+          "none": "None"
         }
       },
-      "probe_profile": {
-        "name": "{probe} food",
+      "profile": {
+        "name": "Food",
         "state": {
           "custom": "Custom",
           "beef_rare": "Beef rare",
@@ -156,6 +166,15 @@
           "turkey": "Turkey",
           "duck_breast": "Duck breast",
           "lamb_leg": "Leg of lamb",
+          "roe_deer_saddle": "Roe deer saddle",
+          "roe_deer_leg": "Roe deer leg",
+          "red_deer_saddle": "Red deer saddle",
+          "red_deer_leg": "Red deer leg",
+          "wild_boar_saddle": "Wild boar saddle",
+          "wild_boar_leg": "Wild boar leg",
+          "wild_boar_shoulder_pulled": "Wild boar shoulder (pulled)",
+          "hare": "Hare / rabbit",
+          "wild_duck_breast": "Wild duck breast",
           "sausage": "Sausage",
           "salmon": "Salmon",
           "fish_white": "White fish",
@@ -167,14 +186,41 @@
       "chamber_target": {
         "name": "Chamber target"
       },
-      "probe_target": {
-        "name": "{probe} target temperature"
+      "target": {
+        "name": "Target temperature"
       }
     },
     "sensor": {
+      "chamber_temperature": {
+        "name": "Chamber temperature"
+      },
+      "outdoor_temperature": {
+        "name": "Outdoor temperature"
+      },
+      "assigned_probes": {
+        "name": "Attached probes",
+        "state_attributes": {
+          "probes": {
+            "name": "Probes"
+          }
+        }
+      },
       "session_duration": {
         "name": "Session duration",
         "state_attributes": {
+          "grill_type": {
+            "name": "Grill type",
+            "state": {
+              "suckling_pig_grill": "Suckling pig grill",
+              "smoker": "Smoker",
+              "gas_grill": "Gas grill",
+              "charcoal_grill": "Charcoal grill",
+              "dutch_oven": "Dutch oven",
+              "electric_hob": "Electric hob",
+              "pizza_oven": "Pizza oven",
+              "other": "Other"
+            }
+          },
           "session_start": {
             "name": "Session start"
           },
@@ -183,20 +229,20 @@
           }
         }
       },
-      "chamber_temperature": {
-        "name": "Chamber temperature"
+      "core_temperature": {
+        "name": "Core temperature"
       },
-      "probe_core_temperature": {
-        "name": "{probe} core temperature"
+      "ambient_temperature": {
+        "name": "Ambient temperature"
       },
-      "probe_progress": {
-        "name": "{probe} progress"
+      "progress": {
+        "name": "Progress"
       },
-      "probe_remaining_time": {
-        "name": "{probe} remaining time"
+      "remaining_time": {
+        "name": "Remaining time"
       },
-      "probe_phase": {
-        "name": "{probe} phase",
+      "phase": {
+        "name": "Phase",
         "state": {
           "idle": "Idle",
           "heating": "Heating up",
@@ -212,8 +258,8 @@
       "chamber_deviation": {
         "name": "Chamber out of range"
       },
-      "probe_target_reached": {
-        "name": "{probe} target reached"
+      "target_reached": {
+        "name": "Target reached"
       }
     },
     "button": {
@@ -225,8 +271,8 @@
       }
     },
     "event": {
-      "kitchen_event": {
-        "name": "Kitchen event",
+      "grill_event": {
+        "name": "Grill event",
         "state_attributes": {
           "event_type": {
             "state": {

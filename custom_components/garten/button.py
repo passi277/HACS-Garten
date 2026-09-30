@@ -7,8 +7,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import GartenConfigEntry
-from .entity import KitchenEntity
-from .kitchen.controller import KitchenController
+from .entity import GrillEntity
+from .kitchen.manager import GrillState, KitchenManager
 
 PARALLEL_UPDATES = 0
 
@@ -19,30 +19,31 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up button entities."""
-    for subentry_id, controller in entry.runtime_data.kitchens.items():
+    kitchen = entry.runtime_data.kitchen
+    for grill_id, grill in kitchen.grills.items():
         async_add_entities(
-            [StartSessionButton(controller), StopSessionButton(controller)],
-            config_subentry_id=subentry_id,
+            [StartSessionButton(kitchen, grill), StopSessionButton(kitchen, grill)],
+            config_subentry_id=grill_id,
         )
 
 
-class StartSessionButton(KitchenEntity, ButtonEntity):
-    """Start (or restart) a cooking session."""
+class StartSessionButton(GrillEntity, ButtonEntity):
+    """Start (or restart) a cooking session, e.g. to preheat."""
 
-    def __init__(self, controller: KitchenController) -> None:
-        super().__init__(controller, "session_start")
+    def __init__(self, manager: KitchenManager, grill: GrillState) -> None:
+        super().__init__(manager, grill, "session_start")
 
     async def async_press(self) -> None:
         """Start a session."""
-        self.controller.start_session()
+        self.manager.start_session(self.grill.subentry_id)
 
 
-class StopSessionButton(KitchenEntity, ButtonEntity):
-    """End the cooking session."""
+class StopSessionButton(GrillEntity, ButtonEntity):
+    """End the cooking session and release the probes."""
 
-    def __init__(self, controller: KitchenController) -> None:
-        super().__init__(controller, "session_stop")
+    def __init__(self, manager: KitchenManager, grill: GrillState) -> None:
+        super().__init__(manager, grill, "session_stop")
 
     async def async_press(self) -> None:
         """End the session."""
-        self.controller.stop_session()
+        self.manager.stop_session(self.grill.subentry_id)

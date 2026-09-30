@@ -12,8 +12,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import GartenConfigEntry
-from .entity import KitchenEntity, ProbeEntity
-from .kitchen.controller import KitchenController, Probe
+from .entity import GrillEntity, ProbeEntity
+from .kitchen.manager import GrillState, KitchenManager, ProbeState
 
 PARALLEL_UPDATES = 0
 
@@ -24,10 +24,15 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up number entities."""
-    for subentry_id, controller in entry.runtime_data.kitchens.items():
-        entities: list[NumberEntity] = [ChamberTargetNumber(controller)]
-        entities.extend(ProbeTargetNumber(controller, p) for p in controller.probes)
-        async_add_entities(entities, config_subentry_id=subentry_id)
+    kitchen = entry.runtime_data.kitchen
+    for grill_id, grill in kitchen.grills.items():
+        async_add_entities(
+            [ChamberTargetNumber(kitchen, grill)], config_subentry_id=grill_id
+        )
+    for probe_id, probe in kitchen.probes.items():
+        async_add_entities(
+            [ProbeTargetNumber(kitchen, probe)], config_subentry_id=probe_id
+        )
 
 
 class _TemperatureNumber(NumberEntity):
@@ -37,23 +42,23 @@ class _TemperatureNumber(NumberEntity):
     _attr_native_min_value = 0
 
 
-class ChamberTargetNumber(KitchenEntity, _TemperatureNumber):
-    """Desired temperature of the grill / smoker chamber."""
+class ChamberTargetNumber(GrillEntity, _TemperatureNumber):
+    """Desired temperature of the grill chamber."""
 
-    _attr_native_max_value = 450
+    _attr_native_max_value = 500
     _attr_native_step = 5
 
-    def __init__(self, controller: KitchenController) -> None:
-        super().__init__(controller, "chamber_target")
+    def __init__(self, manager: KitchenManager, grill: GrillState) -> None:
+        super().__init__(manager, grill, "chamber_target")
 
     @property
     def native_value(self) -> float | None:
         """Return the chamber target."""
-        return self.controller.chamber_target
+        return self.grill.chamber_target
 
     async def async_set_native_value(self, value: float) -> None:
         """Set the chamber target."""
-        self.controller.set_chamber_target(value)
+        self.manager.set_chamber_target(self.grill.subentry_id, value)
 
 
 class ProbeTargetNumber(ProbeEntity, _TemperatureNumber):
@@ -62,8 +67,8 @@ class ProbeTargetNumber(ProbeEntity, _TemperatureNumber):
     _attr_native_max_value = 120
     _attr_native_step = 1
 
-    def __init__(self, controller: KitchenController, probe: Probe) -> None:
-        super().__init__(controller, probe, "target")
+    def __init__(self, manager: KitchenManager, probe: ProbeState) -> None:
+        super().__init__(manager, probe, "target")
 
     @property
     def native_value(self) -> float:
@@ -72,4 +77,4 @@ class ProbeTargetNumber(ProbeEntity, _TemperatureNumber):
 
     async def async_set_native_value(self, value: float) -> None:
         """Set the target core temperature."""
-        self.controller.set_target(self.probe.index, value)
+        self.manager.set_target(self.probe.subentry_id, value)

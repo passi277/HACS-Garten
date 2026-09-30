@@ -2,17 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from homeassistant.components.select import SelectEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import GartenConfigEntry
-from .const import CONF_CAMERA, CONF_LIGHT, CONF_POWER_SWITCH
-from .entity import KitchenEntity, ProbeEntity
-from .kitchen.controller import KitchenController, Probe
-from .kitchen.profiles import PROFILE_OPTIONS, CookingMethod
+from .const import NO_GRILL
+from .entity import ProbeEntity
+from .kitchen.manager import KitchenManager, ProbeState
+from .kitchen.profiles import PROFILE_OPTIONS
 
 PARALLEL_UPDATES = 0
 
@@ -23,47 +21,45 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     """Set up select entities."""
-    for subentry_id, controller in entry.runtime_data.kitchens.items():
-        entities: list[SelectEntity] = [CookingMethodSelect(controller)]
-        entities.extend(ProfileSelect(controller, p) for p in controller.probes)
-        async_add_entities(entities, config_subentry_id=subentry_id)
+    kitchen = entry.runtime_data.kitchen
+    for probe_id, probe in kitchen.probes.items():
+        async_add_entities(
+            [ProbeGrillSelect(kitchen, probe), ProbeProfileSelect(kitchen, probe)],
+            config_subentry_id=probe_id,
+        )
 
 
-class CookingMethodSelect(KitchenEntity, SelectEntity):
-    """Cooking method (gas grill, smoker, ...) of the kitchen."""
+class ProbeGrillSelect(ProbeEntity, SelectEntity):
+    """Grill the probe is currently used on; attaching starts a session."""
 
-    _attr_options = [m.value for m in CookingMethod]
-
-    def __init__(self, controller: KitchenController) -> None:
-        super().__init__(controller, "cooking_method")
+    def __init__(self, manager: KitchenManager, probe: ProbeState) -> None:
+        super().__init__(manager, probe, "grill")
+        self._attr_options = [
+            NO_GRILL,
+            *sorted(g.name for g in manager.grills.values()),
+        ]
 
     @property
     def current_option(self) -> str:
-        """Return the active cooking method."""
-        return self.controller.method.value
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Expose linked devices for dashboards (e.g. the floorplan card)."""
-        data = self.controller.subentry.data
-        return {
-            key: data[key]
-            for key in (CONF_CAMERA, CONF_LIGHT, CONF_POWER_SWITCH)
-            if data.get(key)
-        }
+        """Return the grill the probe is attached to."""
+        grill = self.manager.grills.get(self.probe.grill_id or "")
+        return grill.name if grill else NO_GRILL
 
     async def async_select_option(self, option: str) -> None:
-        """Change the cooking method."""
-        self.controller.set_method(CookingMethod(option))
+        """Attach the probe to a grill or detach it."""
+        grill = self.manager.grill_by_name(option)
+        self.manager.assign_probe(
+            self.probe.subentry_id, grill.subentry_id if grill else None
+        )
 
 
-class ProfileSelect(ProbeEntity, SelectEntity):
-    """Food profile of a probe; sets the target core temperature."""
+class ProbeProfileSelect(ProbeEntity, SelectEntity):
+    """Food the probe is in; sets the target core temperature."""
 
     _attr_options = PROFILE_OPTIONS
 
-    def __init__(self, controller: KitchenController, probe: Probe) -> None:
-        super().__init__(controller, probe, "profile")
+    def __init__(self, manager: KitchenManager, probe: ProbeState) -> None:
+        super().__init__(manager, probe, "profile")
 
     @property
     def current_option(self) -> str:
@@ -72,4 +68,4 @@ class ProfileSelect(ProbeEntity, SelectEntity):
 
     async def async_select_option(self, option: str) -> None:
         """Select a food profile."""
-        self.controller.set_profile(self.probe.index, option)
+        self.manager.set_profile(self.probe.subentry_id, option)

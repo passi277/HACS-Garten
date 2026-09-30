@@ -3,143 +3,153 @@
     "step": {
       "user": {
         "title": "Garten",
-        "description": "Legt den Garten an. Danach fügst du Bereiche wie die Outdoor-Küche über „Outdoor-Küche hinzufügen“ hinzu."
+        "description": "Grillgeräte und Sonden fügst du danach am Garten-Eintrag über „Grill hinzufügen“ und „Sonde hinzufügen“ hinzu.",
+        "data": {
+          "outdoor_temperature_entity": "Außentemperatur"
+        },
+        "data_description": {
+          "outdoor_temperature_entity": "Optional: Temperatursensor oder Wetter-Entität für die Außentemperatur. Wird bei jedem Grill angezeigt und in der Session-Historie gespeichert."
+        }
+      },
+      "reconfigure": {
+        "title": "Garten",
+        "description": "Grillgeräte und Sonden fügst du danach am Garten-Eintrag über „Grill hinzufügen“ und „Sonde hinzufügen“ hinzu.",
+        "data": {
+          "outdoor_temperature_entity": "Außentemperatur"
+        },
+        "data_description": {
+          "outdoor_temperature_entity": "Optional: Temperatursensor oder Wetter-Entität für die Außentemperatur. Wird bei jedem Grill angezeigt und in der Session-Historie gespeichert."
+        }
       }
     },
     "abort": {
-      "already_configured": "Der Garten ist bereits eingerichtet. Füge weitere Bereiche zum bestehenden Eintrag hinzu."
+      "already_configured": "Der Garten ist bereits eingerichtet. Füge Grills und Sonden zum bestehenden Eintrag hinzu.",
+      "reconfigure_successful": "Die Garten-Einstellungen wurden gespeichert."
     }
   },
   "config_subentries": {
-    "kitchen": {
+    "grill": {
       "initiate_flow": {
-        "user": "Outdoor-Küche hinzufügen",
-        "reconfigure": "Outdoor-Küche bearbeiten"
+        "user": "Grill hinzufügen",
+        "reconfigure": "Grill bearbeiten"
       },
-      "entry_type": "Outdoor-Küche",
+      "entry_type": "Grill",
       "step": {
         "user": {
-          "title": "Outdoor-Küche",
-          "description": "Wähle die Sensoren deiner Grillthermometer. Kernsensor ist die Innentemperatur, Garraumsensor die Umgebungstemperatur.",
+          "title": "Grill",
+          "description": "Ein Grillgerät wie Spanferkelgrill, Smoker oder Gasgrill. Die Sonden ordnest du beim Grillen über das Feld „Grill“ an der Sonde zu.",
           "data": {
             "name": "Name",
+            "grill_type": "Grilltyp",
+            "chamber_entity": "Eigener Garraum-Sensor",
             "chamber_tolerance": "Garraum-Toleranz",
             "camera_entity": "Kamera",
             "light_entity": "Licht",
             "power_switch_entity": "Stromschalter"
           },
           "data_description": {
-            "chamber_tolerance": "Erlaubte Abweichung der Garraumtemperatur vom Sollwert, bevor gewarnt wird.",
+            "chamber_entity": "Optional, z. B. ein fest verbautes Thermometer. Ohne eigenen Sensor zählt die Umgebungstemperatur der zugeordneten Sonde.",
+            "chamber_tolerance": "Erlaubte Abweichung vom Garraum-Soll, bevor gewarnt wird.",
             "camera_entity": "Optional, wird später im Garten-Floorplan angezeigt.",
             "light_entity": "Optional, wird später im Garten-Floorplan angezeigt.",
             "power_switch_entity": "Optional, wird später im Garten-Floorplan angezeigt."
-          },
-          "sections": {
-            "probe_1": {
-              "name": "Sonde 1",
-              "data": {
-                "name": "Name der Sonde",
-                "core_entity": "Sensor Kerntemperatur",
-                "ambient_entity": "Sensor Umgebungs-/Garraumtemperatur"
-              }
-            },
-            "probe_2": {
-              "name": "Sonde 2",
-              "data": {
-                "name": "Name der Sonde",
-                "core_entity": "Sensor Kerntemperatur",
-                "ambient_entity": "Sensor Umgebungs-/Garraumtemperatur"
-              }
-            },
-            "probe_3": {
-              "name": "Sonde 3",
-              "data": {
-                "name": "Name der Sonde",
-                "core_entity": "Sensor Kerntemperatur",
-                "ambient_entity": "Sensor Umgebungs-/Garraumtemperatur"
-              }
-            },
-            "probe_4": {
-              "name": "Sonde 4",
-              "data": {
-                "name": "Name der Sonde",
-                "core_entity": "Sensor Kerntemperatur",
-                "ambient_entity": "Sensor Umgebungs-/Garraumtemperatur"
-              }
-            }
           }
         },
         "reconfigure": {
-          "title": "Outdoor-Küche",
-          "description": "Sonden und verknüpfte Geräte ändern.",
+          "title": "Grill",
           "data": {
             "name": "Name",
+            "grill_type": "Grilltyp",
+            "chamber_entity": "Eigener Garraum-Sensor",
             "chamber_tolerance": "Garraum-Toleranz",
             "camera_entity": "Kamera",
             "light_entity": "Licht",
             "power_switch_entity": "Stromschalter"
           },
-          "sections": {
-            "probe_1": {
-              "name": "Sonde 1",
-              "data": {
-                "name": "Name der Sonde",
-                "core_entity": "Sensor Kerntemperatur",
-                "ambient_entity": "Sensor Umgebungs-/Garraumtemperatur"
-              }
-            },
-            "probe_2": {
-              "name": "Sonde 2",
-              "data": {
-                "name": "Name der Sonde",
-                "core_entity": "Sensor Kerntemperatur",
-                "ambient_entity": "Sensor Umgebungs-/Garraumtemperatur"
-              }
-            },
-            "probe_3": {
-              "name": "Sonde 3",
-              "data": {
-                "name": "Name der Sonde",
-                "core_entity": "Sensor Kerntemperatur",
-                "ambient_entity": "Sensor Umgebungs-/Garraumtemperatur"
-              }
-            },
-            "probe_4": {
-              "name": "Sonde 4",
-              "data": {
-                "name": "Name der Sonde",
-                "core_entity": "Sensor Kerntemperatur",
-                "ambient_entity": "Sensor Umgebungs-/Garraumtemperatur"
-              }
-            }
+          "data_description": {
+            "chamber_entity": "Optional, z. B. ein fest verbautes Thermometer. Ohne eigenen Sensor zählt die Umgebungstemperatur der zugeordneten Sonde.",
+            "chamber_tolerance": "Erlaubte Abweichung vom Garraum-Soll, bevor gewarnt wird.",
+            "camera_entity": "Optional, wird später im Garten-Floorplan angezeigt.",
+            "light_entity": "Optional, wird später im Garten-Floorplan angezeigt.",
+            "power_switch_entity": "Optional, wird später im Garten-Floorplan angezeigt."
           }
         }
       },
       "error": {
-        "no_probe": "Wähle mindestens einen Sensor für die Kerntemperatur.",
-        "core_required": "Ein Garraumsensor braucht einen Kernsensor bei derselben Sonde.",
-        "duplicate_probe": "Dieser Kernsensor wird bereits von einer anderen Sonde verwendet."
+        "name_exists": "Es gibt bereits einen Grill mit diesem Namen.",
+        "name_reserved": "Dieser Name ist reserviert."
       },
       "abort": {
-        "reconfigure_successful": "Die Outdoor-Küche wurde aktualisiert."
+        "reconfigure_successful": "Der Grill wurde aktualisiert."
+      }
+    },
+    "probe": {
+      "initiate_flow": {
+        "user": "Sonde hinzufügen",
+        "reconfigure": "Sonde bearbeiten"
+      },
+      "entry_type": "Sonde",
+      "step": {
+        "user": {
+          "title": "Sonde",
+          "description": "Ein Grillthermometer bzw. eine Sonde, z. B. Meater. Es kann an jedem Grill verwendet werden.",
+          "data": {
+            "name": "Name",
+            "core_entity": "Sensor Kerntemperatur",
+            "ambient_entity": "Sensor Umgebungstemperatur"
+          },
+          "data_description": {
+            "core_entity": "Die Innentemperatur des Garguts, z. B. „Meater 2 Innentemperatur“.",
+            "ambient_entity": "Optional, z. B. „Meater 2 Umgebungstemperatur“. Dient als Garraumtemperatur, wenn der Grill keinen eigenen Sensor hat."
+          }
+        },
+        "reconfigure": {
+          "title": "Sonde",
+          "data": {
+            "name": "Name",
+            "core_entity": "Sensor Kerntemperatur",
+            "ambient_entity": "Sensor Umgebungstemperatur"
+          },
+          "data_description": {
+            "core_entity": "Die Innentemperatur des Garguts, z. B. „Meater 2 Innentemperatur“.",
+            "ambient_entity": "Optional, z. B. „Meater 2 Umgebungstemperatur“. Dient als Garraumtemperatur, wenn der Grill keinen eigenen Sensor hat."
+          }
+        }
+      },
+      "error": {
+        "name_exists": "Es gibt bereits eine Sonde mit diesem Namen.",
+        "core_in_use": "Dieser Sensor wird bereits von einer anderen Sonde verwendet.",
+        "same_as_core": "Umgebungs- und Kernsensor müssen verschieden sein."
+      },
+      "abort": {
+        "reconfigure_successful": "Die Sonde wurde aktualisiert."
+      }
+    }
+  },
+  "selector": {
+    "grill_type": {
+      "options": {
+        "suckling_pig_grill": "Spanferkelgrill",
+        "smoker": "Smoker",
+        "gas_grill": "Gasgrill",
+        "charcoal_grill": "Holzkohlegrill",
+        "dutch_oven": "Dutch Oven",
+        "electric_hob": "Elektro-Kochplatte",
+        "pizza_oven": "Pizzaofen",
+        "other": "Sonstiges"
       }
     }
   },
   "entity": {
     "select": {
-      "cooking_method": {
-        "name": "Garmethode",
+      "grill": {
+        "name": "Grill",
         "state": {
-          "off": "Aus",
-          "gas_grill": "Gasgrill",
-          "smoker": "Smoker",
-          "suckling_pig": "Spanferkel",
-          "dutch_oven": "Dutch Oven",
-          "electric_hob": "Elektro-Herdplatte"
+          "none": "Keiner"
         }
       },
-      "probe_profile": {
-        "name": "{probe} Gargut",
+      "profile": {
+        "name": "Gargut",
         "state": {
           "custom": "Eigene",
           "beef_rare": "Rind rare",
@@ -156,6 +166,15 @@
           "turkey": "Pute",
           "duck_breast": "Entenbrust",
           "lamb_leg": "Lammkeule",
+          "roe_deer_saddle": "Reh Rücken",
+          "roe_deer_leg": "Reh Keule",
+          "red_deer_saddle": "Hirsch Rücken",
+          "red_deer_leg": "Hirsch Keule",
+          "wild_boar_saddle": "Wildschwein Rücken",
+          "wild_boar_leg": "Wildschwein Keule",
+          "wild_boar_shoulder_pulled": "Wildschwein Schulter (gezupft)",
+          "hare": "Hase / Kaninchen",
+          "wild_duck_breast": "Wildente Brust",
           "sausage": "Bratwurst",
           "salmon": "Lachs",
           "fish_white": "Weißfisch",
@@ -167,14 +186,41 @@
       "chamber_target": {
         "name": "Garraum-Soll"
       },
-      "probe_target": {
-        "name": "{probe} Zieltemperatur"
+      "target": {
+        "name": "Zieltemperatur"
       }
     },
     "sensor": {
+      "chamber_temperature": {
+        "name": "Garraumtemperatur"
+      },
+      "outdoor_temperature": {
+        "name": "Außentemperatur"
+      },
+      "assigned_probes": {
+        "name": "Zugeordnete Sonden",
+        "state_attributes": {
+          "probes": {
+            "name": "Sonden"
+          }
+        }
+      },
       "session_duration": {
         "name": "Session-Dauer",
         "state_attributes": {
+          "grill_type": {
+            "name": "Grilltyp",
+            "state": {
+              "suckling_pig_grill": "Spanferkelgrill",
+              "smoker": "Smoker",
+              "gas_grill": "Gasgrill",
+              "charcoal_grill": "Holzkohlegrill",
+              "dutch_oven": "Dutch Oven",
+              "electric_hob": "Elektro-Kochplatte",
+              "pizza_oven": "Pizzaofen",
+              "other": "Sonstiges"
+            }
+          },
           "session_start": {
             "name": "Session-Start"
           },
@@ -183,20 +229,20 @@
           }
         }
       },
-      "chamber_temperature": {
-        "name": "Garraumtemperatur"
+      "core_temperature": {
+        "name": "Kerntemperatur"
       },
-      "probe_core_temperature": {
-        "name": "{probe} Kerntemperatur"
+      "ambient_temperature": {
+        "name": "Umgebungstemperatur"
       },
-      "probe_progress": {
-        "name": "{probe} Fortschritt"
+      "progress": {
+        "name": "Fortschritt"
       },
-      "probe_remaining_time": {
-        "name": "{probe} Restzeit"
+      "remaining_time": {
+        "name": "Restzeit"
       },
-      "probe_phase": {
-        "name": "{probe} Phase",
+      "phase": {
+        "name": "Phase",
         "state": {
           "idle": "Bereit",
           "heating": "Aufheizen",
@@ -212,8 +258,8 @@
       "chamber_deviation": {
         "name": "Garraum außerhalb Bereich"
       },
-      "probe_target_reached": {
-        "name": "{probe} Ziel erreicht"
+      "target_reached": {
+        "name": "Ziel erreicht"
       }
     },
     "button": {
@@ -225,8 +271,8 @@
       }
     },
     "event": {
-      "kitchen_event": {
-        "name": "Küchen-Ereignis",
+      "grill_event": {
+        "name": "Grill-Ereignis",
         "state_attributes": {
           "event_type": {
             "state": {
