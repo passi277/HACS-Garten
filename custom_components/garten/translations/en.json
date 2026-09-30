@@ -1,0 +1,246 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Garden",
+        "description": "Creates the garden hub. Afterwards add areas such as the outdoor kitchen via \"Add outdoor kitchen\"."
+      }
+    },
+    "abort": {
+      "already_configured": "The garden is already set up. Add further areas to the existing entry."
+    }
+  },
+  "config_subentries": {
+    "kitchen": {
+      "initiate_flow": {
+        "user": "Add outdoor kitchen",
+        "reconfigure": "Reconfigure outdoor kitchen"
+      },
+      "entry_type": "Outdoor kitchen",
+      "step": {
+        "user": {
+          "title": "Outdoor kitchen",
+          "description": "Select the meat thermometer sensors. Use the internal (core) temperature as core sensor and the ambient temperature as chamber sensor.",
+          "data": {
+            "name": "Name",
+            "chamber_tolerance": "Chamber tolerance",
+            "camera_entity": "Camera",
+            "light_entity": "Light",
+            "power_switch_entity": "Power switch"
+          },
+          "data_description": {
+            "chamber_tolerance": "Allowed deviation of the chamber temperature from its target before a warning is raised.",
+            "camera_entity": "Optional, shown on the garden floorplan later.",
+            "light_entity": "Optional, shown on the garden floorplan later.",
+            "power_switch_entity": "Optional, shown on the garden floorplan later."
+          },
+          "sections": {
+            "probe_1": {
+              "name": "Probe 1",
+              "data": {
+                "name": "Probe name",
+                "core_entity": "Core temperature sensor",
+                "ambient_entity": "Ambient / chamber temperature sensor"
+              }
+            },
+            "probe_2": {
+              "name": "Probe 2",
+              "data": {
+                "name": "Probe name",
+                "core_entity": "Core temperature sensor",
+                "ambient_entity": "Ambient / chamber temperature sensor"
+              }
+            },
+            "probe_3": {
+              "name": "Probe 3",
+              "data": {
+                "name": "Probe name",
+                "core_entity": "Core temperature sensor",
+                "ambient_entity": "Ambient / chamber temperature sensor"
+              }
+            },
+            "probe_4": {
+              "name": "Probe 4",
+              "data": {
+                "name": "Probe name",
+                "core_entity": "Core temperature sensor",
+                "ambient_entity": "Ambient / chamber temperature sensor"
+              }
+            }
+          }
+        },
+        "reconfigure": {
+          "title": "Outdoor kitchen",
+          "description": "Change probes and linked devices.",
+          "data": {
+            "name": "Name",
+            "chamber_tolerance": "Chamber tolerance",
+            "camera_entity": "Camera",
+            "light_entity": "Light",
+            "power_switch_entity": "Power switch"
+          },
+          "sections": {
+            "probe_1": {
+              "name": "Probe 1",
+              "data": {
+                "name": "Probe name",
+                "core_entity": "Core temperature sensor",
+                "ambient_entity": "Ambient / chamber temperature sensor"
+              }
+            },
+            "probe_2": {
+              "name": "Probe 2",
+              "data": {
+                "name": "Probe name",
+                "core_entity": "Core temperature sensor",
+                "ambient_entity": "Ambient / chamber temperature sensor"
+              }
+            },
+            "probe_3": {
+              "name": "Probe 3",
+              "data": {
+                "name": "Probe name",
+                "core_entity": "Core temperature sensor",
+                "ambient_entity": "Ambient / chamber temperature sensor"
+              }
+            },
+            "probe_4": {
+              "name": "Probe 4",
+              "data": {
+                "name": "Probe name",
+                "core_entity": "Core temperature sensor",
+                "ambient_entity": "Ambient / chamber temperature sensor"
+              }
+            }
+          }
+        }
+      },
+      "error": {
+        "no_probe": "Select at least one core temperature sensor.",
+        "core_required": "An ambient sensor needs a core temperature sensor for the same probe.",
+        "duplicate_probe": "This core temperature sensor is already used by another probe."
+      },
+      "abort": {
+        "reconfigure_successful": "The outdoor kitchen was updated."
+      }
+    }
+  },
+  "entity": {
+    "select": {
+      "cooking_method": {
+        "name": "Cooking method",
+        "state": {
+          "off": "Off",
+          "gas_grill": "Gas grill",
+          "smoker": "Smoker",
+          "suckling_pig": "Suckling pig",
+          "dutch_oven": "Dutch oven",
+          "electric_hob": "Electric hob"
+        }
+      },
+      "probe_profile": {
+        "name": "{probe} food",
+        "state": {
+          "custom": "Custom",
+          "beef_rare": "Beef rare",
+          "beef_medium_rare": "Beef medium rare",
+          "beef_medium": "Beef medium",
+          "beef_well_done": "Beef well done",
+          "brisket": "Brisket",
+          "pulled_pork": "Pulled pork",
+          "spare_ribs": "Spare ribs",
+          "pork_loin": "Pork loin",
+          "suckling_pig": "Suckling pig",
+          "chicken": "Chicken",
+          "chicken_thigh": "Chicken thigh",
+          "turkey": "Turkey",
+          "duck_breast": "Duck breast",
+          "lamb_leg": "Leg of lamb",
+          "sausage": "Sausage",
+          "salmon": "Salmon",
+          "fish_white": "White fish",
+          "bread": "Bread"
+        }
+      }
+    },
+    "number": {
+      "chamber_target": {
+        "name": "Chamber target"
+      },
+      "probe_target": {
+        "name": "{probe} target temperature"
+      }
+    },
+    "sensor": {
+      "session_duration": {
+        "name": "Session duration",
+        "state_attributes": {
+          "session_start": {
+            "name": "Session start"
+          },
+          "last_session": {
+            "name": "Last session"
+          }
+        }
+      },
+      "chamber_temperature": {
+        "name": "Chamber temperature"
+      },
+      "probe_core_temperature": {
+        "name": "{probe} core temperature"
+      },
+      "probe_progress": {
+        "name": "{probe} progress"
+      },
+      "probe_remaining_time": {
+        "name": "{probe} remaining time"
+      },
+      "probe_phase": {
+        "name": "{probe} phase",
+        "state": {
+          "idle": "Idle",
+          "heating": "Heating up",
+          "cooking": "Cooking",
+          "stall": "Stall",
+          "near_done": "Almost done",
+          "target_reached": "Target reached",
+          "resting": "Resting"
+        }
+      }
+    },
+    "binary_sensor": {
+      "chamber_deviation": {
+        "name": "Chamber out of range"
+      },
+      "probe_target_reached": {
+        "name": "{probe} target reached"
+      }
+    },
+    "button": {
+      "session_start": {
+        "name": "Start session"
+      },
+      "session_stop": {
+        "name": "End session"
+      }
+    },
+    "event": {
+      "kitchen_event": {
+        "name": "Kitchen event",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "session_started": "Session started",
+              "near_done": "Almost done",
+              "target_reached": "Target reached",
+              "stall_detected": "Stall detected",
+              "chamber_deviation": "Chamber out of range",
+              "probe_offline": "Probe offline",
+              "session_ended": "Session ended"
+            }
+          }
+        }
+      }
+    }
+  }
+}
